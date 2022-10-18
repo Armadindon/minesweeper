@@ -194,19 +194,36 @@ class MinesweeperAI():
         self.mark_safe(cell)
 
         # Add the sentences
-        print(self.height, self.width)
         neighbours_cells = [(i + cell[0], j + cell[1]) for i in range(-1, 2)
                             for j in range(-1, 2) if i + cell[0] >= 0 and i + cell[0] < self.height and j + cell[1] >= 0 and j + cell[1] < self.width and (i + cell[0], j + cell[1]) != cell]
-        print(cell, neighbours_cells)
-        self.knowledge.append(Sentence(neighbours_cells, count))
+        new_knowledge = Sentence(neighbours_cells, count)
+        self.knowledge.append(new_knowledge)
 
         # mark additional cells safe or mine
-        self.safes.update(set(
-            [safe_cell for knowledge in self.knowledge for safe_cell in knowledge.known_safes()]))
-        self.mines.update(set(
-            [mine_cell for knowledge in self.knowledge for mine_cell in knowledge.known_mines()]))
+        new_safe_cells = set([
+            safe_cell for knowledge in self.knowledge for safe_cell in knowledge.known_safes()]).difference(self.safes)
+        new_mine_cells = set([
+            safe_cell for knowledge in self.knowledge for safe_cell in knowledge.known_safes()]).difference(self.mines)
 
-        # TODO: add any new sentences to the AI's knowledge base if they can be inferred from existing knowledge
+        for safe_cell in new_safe_cells:
+            self.mark_safe(safe_cell)
+        for mine_cell in new_mine_cells:
+            self.mark_mine(mine_cell)
+
+        #  Add any new sentences to the AI's knowledge base if they can be inferred from existing knowledge (subset method)
+        # Instead of check if each sentence is a subset of another sentence, we used the newly added set
+        to_add_knowledge = []
+        for set1 in self.knowledge:
+            # if set1 is a subset of new sentence's set (and that we are not check the same sentance)
+            if set1 != new_knowledge and set1.cells.issubset(new_knowledge.cells):
+                # new sentence set - set1 = new sentence count - count1
+                new_sentence = Sentence(new_knowledge.cells.difference(
+                    set1.cells), new_knowledge.count - set1.count)
+                # We check that the sentence is not already in the set
+                if new_sentence not in self.knowledge:
+                    to_add_knowledge.append(new_sentence)
+
+        self.knowledge.extend(to_add_knowledge)
 
     def make_safe_move(self):
         """
@@ -218,13 +235,11 @@ class MinesweeperAI():
         and self.moves_made, but should not modify any of those values.
         """
         possible_safe_move = self.safes.difference(self.moves_made)
-        print(possible_safe_move)
         if len(possible_safe_move) == 0:
             return None
 
         choice = random.choice(list(possible_safe_move))
 
-        print("AI chosen to play :", choice)
         return choice
 
     def make_random_move(self):
@@ -241,5 +256,4 @@ class MinesweeperAI():
             return None
 
         choice = random.choice(list(possible_moves))
-        print("AI chosen to play :", choice)
         return choice
