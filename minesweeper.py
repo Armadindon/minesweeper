@@ -203,7 +203,7 @@ class MinesweeperAI():
         new_safe_cells = set([
             safe_cell for knowledge in self.knowledge for safe_cell in knowledge.known_safes()]).difference(self.safes)
         new_mine_cells = set([
-            safe_cell for knowledge in self.knowledge for safe_cell in knowledge.known_safes()]).difference(self.mines)
+            mine_cell for knowledge in self.knowledge for mine_cell in knowledge.known_mines()]).difference(self.mines)
 
         for safe_cell in new_safe_cells:
             self.mark_safe(safe_cell)
@@ -234,7 +234,8 @@ class MinesweeperAI():
         This function may use the knowledge in self.mines, self.safes
         and self.moves_made, but should not modify any of those values.
         """
-        possible_safe_move = self.safes.difference(self.moves_made)
+        possible_safe_move = self.safes.difference(
+            self.moves_made).difference(self.mines)
         if len(possible_safe_move) == 0:
             return None
 
